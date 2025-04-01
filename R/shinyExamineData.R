@@ -1155,6 +1155,10 @@ examineDataServer<-function(id,r){
                           paste0("QTable_",r$examineData$config$sampleMatrix))
 
             conn <- dbConnect(RSQLite::SQLite(), r$examineData$config$dbName)
+            createViewQuery2 <- sprintf("CREATE VIEW IF NOT EXISTS %s AS SELECT DISTINCT injections.name, injections.nLMs, injections.nPeaks, injections.TIC, injections.IPOscore, injections.sampID, injections.batchWeek, injections.chromPol, samples.projName, samples.type FROM samples, injections WHERE samples.sampID=injections.sampID", #ON injections.injID=lmQuality.injID WHERE samples.sampID=injections.sampID
+                                        paste0("QTableDistinct_",r$examineData$config$sampleMatrix))
+            dbExecute(conn, createViewQuery2)
+
             r$examineData$tablePresent <- dbGetQuery(conn, s3)
             r$examineData$sampleLevelDT<-as.data.table(dbGetQuery(conn, s1))
             r$examineData$nSamps <- as.integer(dbGetQuery(conn, s2))

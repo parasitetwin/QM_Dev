@@ -18,6 +18,8 @@
 #The specific instrument could be logged if inputed by user!
 checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName="", sampleMatrix="", dPPM=10, rtWin=30, alpha = 0.01, noCheck=c("blank", "cond", "CP"), Config, slackOn=F, batch=F){
 
+  timeOfInit <- Sys.time()
+
   #Extracting the file name from the filePath
   fileName<-basename(filePath)
 
@@ -27,6 +29,7 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
   fileInDB <- dbGetQuery(conn, sprintf("SELECT name FROM injections i WHERE name='%s'",
                                        fileName))
   dbDisconnect(conn)
+
   if(dim(fileInDB)[1]!=0){
     return()
   }
@@ -127,9 +130,52 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
     HardLimFWHMProp <- Config$RNFWHMHardLim
     HardLimTFProp <- Config$RNTFHardLim
     HardLimSNProp <- Config$RNSNHardLim
-  } else {
-    print('Sample does not have any supported polarity, please make sure naming of file is correct')
-    return()
+  } else if (testInj$chromPol=="HP") {
+    SoftLimnLMs <- Config$HPnLMSoftLim
+    SoftLimnPeaks <- Config$HPnPeaksSoftLim
+    SoftLimIPO <- Config$HPIPOSoftLim
+    SoftLimIntProp <- Config$HPIntPropSofttLim
+    SoftLimRtProp <- Config$HPRtPropSoftLim
+    SoftLimTIC <- Config$HPTICSoftLim
+    SoftLimNoiseProp <- Config$HPNoiseSoftLim
+    SoftLimHeightProp <- Config$HPHeightSoftLim
+    SoftLimFWHMProp <- Config$HPFWHMSoftLim
+    SoftLimTFProp <- Config$HPTFSoftLim
+    SoftLimSNProp <- Config$HPSNSoftLim
+    HardLimnLMs <- Config$HPnLMHardLim
+    HardLimnPeaks <- Config$HPnPeaksHardLim
+    HardLimIPO <- Config$HPIPOHardLim
+    HardLimIntProp <- Config$HPIntPropHardtLim
+    HardLimRtProp <- Config$HPRtPropHardLim
+    HardLimTIC <- Config$HPTICHardLim
+    HardLimNoiseProp <- Config$HPNoiseHardLim
+    HardLimHeightProp <- Config$HPHeightHardLim
+    HardLimFWHMProp <- Config$HPFWHMHardLim
+    HardLimTFProp <- Config$HPTFHardLim
+    HardLimSNProp <- Config$HPSNHardLim
+  } else if (testInj$chromPol=="HN") {
+    SoftLimnLMs <- Config$HNnLMSoftLim
+    SoftLimnPeaks <- Config$HNnPeaksSoftLim
+    SoftLimIPO <- Config$HNIPOSoftLim
+    SoftLimIntProp <- Config$HNIntPropSofttLim
+    SoftLimRtProp <- Config$HNRtPropSoftLim
+    SoftLimTIC <- Config$HNTICSoftLim
+    SoftLimNoiseProp <- Config$HNNoiseSoftLim
+    SoftLimHeightProp <- Config$HNHeightSoftLim
+    SoftLimFWHMProp <- Config$HNFWHMSoftLim
+    SoftLimTFProp <- Config$HNTFSoftLim
+    SoftLimSNProp <- Config$HNSNSoftLim
+    HardLimnLMs <- Config$HNnLMHardLim
+    HardLimnPeaks <- Config$HNnPeaksHardLim
+    HardLimIPO <- Config$HNIPOHardLim
+    HardLimIntProp <- Config$HNIntPropHardtLim
+    HardLimRtProp <- Config$HNRtPropHardLim
+    HardLimTIC <- Config$HNTICHardLim
+    HardLimNoiseProp <- Config$HNNoiseHardLim
+    HardLimHeightProp <- Config$HNHeightHardLim
+    HardLimFWHMProp <- Config$HNFWHMHardLim
+    HardLimTFProp <- Config$HNTFHardLim
+    HardLimSNProp <- Config$HNSNHardLim
   }
 
   # Default centwave-parameters for xcms
@@ -166,12 +212,19 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
   resultTryCatch <- tryCatch({
     invisible({
       raw_data <- readMSData(files = filePath, mode = "onDisk") # Read in file -> MS
-      
-      if(length(unique(raw_data@featureData@data$msLevel))==1 && unique(raw_data@featureData@data$msLevel)==2 && batch){
-        # write.table("File only containing MS2 data, performing no quality check", "data/status/status.txt", sep=";", row.names = FALSE, col.names = FALSE)
-        return(NA)
-      }
-      
+      sink("C:/241105QualiMonTest/filterRT.txt")
+      raw_data <- xcms::filterRt(raw_data, rt=c(0.25*60,
+                                                max(raw_data@featureData@data$retentionTime)))
+      print(raw_data)
+      print(raw_data@featureData@data$retentionTime)
+      sink()
+      # stop()
+
+      # if(length(unique(raw_data@featureData@data$msLevel))==1 && unique(raw_data@featureData@data$msLevel)==2 && batch){
+      #   # write.table("File only containing MS2 data, performing no quality check", "data/status/status.txt", sep=";", row.names = FALSE, col.names = FALSE)
+      #   return(NA)
+      # }
+
       gc (reset = TRUE)
       xdata_cwp <- findChromPeaks(raw_data, param = cwp) # Actual peak picking
       gc (reset = TRUE)
@@ -182,15 +235,19 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
       "No error"
     })
   }, error = function(err) {
-    print(paste0("Couldn't read sample: ", fileName))
-    print("properly. Skipping it and continuing file monitoring.")
+    sink("C:/241105QualiMonTest/indbtest.txt")
+    message(paste0("Couldn't read sample: ", fileName))
+    message("properly. Skipping it and continuing file monitoring.")
+    print(paste("Error"))
+    sink()
     return(NA)
   })
-  
+
   if(is.na(resultTryCatch)){
     return()
   }
 
+  timeAfterXCMS <- Sys.time() - timeOfInit
   #Spec <- spectra(raw_data)
   #Noises=sapply(Spec, function (x) specNoise(spec = cbind(mz=x@mz, intensity=x@intensity))) #
   #LM_Noise <- mean(Noises)
@@ -237,8 +294,8 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
   # LMs_not_found <- which(!(c(1:length(landmarks$LMID)) %in% position_in_LMDF))
   #
   sink("NUL")
-    cpcObj<-characterize_xcms_peaklist(xdata_cwp, param=cpcProcParam(sel_peaks = c(position_in_sample)))
-    cptObj<-cpt(cpcObj)[,c(1,2,15,16,14,19,20,27,26)]
+  cpcObj<-characterize_xcms_peaklist(xdata_cwp, param=cpcProcParam(sel_peaks = c(position_in_sample)))
+  cptObj<-cpt(cpcObj)[,c(1,2,15,16,14,19,20,27,26)]
   sink()
 
   # cpc<-parsePeaklist(cpcObj)
@@ -260,7 +317,7 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
   # setParam(cpc) <- list(sel_peaks = c(getParam(cpc, "sel_peaks"), nrow(cpc@pt)))
 
 
-  
+
   cptObj<-cbind(cptObj,(cptObj$sn*2/cptObj$height), (cptObj$tpkb-cptObj$fpkb+1))
   cptObj<-cptObj[,-c(8,9)]
   names(cptObj)<-c("ID","RT","Int","Height","FWHM","TF","SN","Noise","DataPoints")
@@ -347,7 +404,7 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
   ###################################################################################
   #### Checking that there are enough samples /§ sQCs to perform the calculations ####
 
-  if(dim(H0Object$IPOnLM)[1]>1 && dim(H0Object$LMPeaks)[1]>1){
+  if(T==F){ #dim(H0Object$IPOnLM)[1]>1 && dim(H0Object$LMPeaks)[1]>1
     ##############################################
     #### Building a 2D DF of landmark results ####
     if(!batch){
@@ -915,6 +972,7 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
 
     #Else statement referring back to whether there are enough samples in DB to even test sample
   } else {
+    message("Here")
 
     check_LM_info[1,1] = fileName
     check_LM_info[1,2] = -1
@@ -957,6 +1015,7 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
   testInj$nPeaks <- nrow(chromPeaks(xdata_cwp))
   testInj$nSampsMonitor <- Config$nSampsMonitor
 
+  message("Here2")
   ####################################
   ##Slack message for latest sample###
   if(slackOn==TRUE && Config$slackToken != "" && Config$slackChannelHard != ""){
@@ -981,13 +1040,14 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
 
   #Submitting sample, injection and LMPeak to DB
   submitSampToDB(dbName=dbName, injToSub=testInj)
+  message("Here3")
   injAlreadyInDB <- submitInjToDB(dbName=dbName, injToSub=testInj)
   if(injAlreadyInDB == 0){
     submitLMPeaksToDB(dbName=dbName, injToSub=testInj)
   } #else {
-    # print("Injection already in DB, no LM peak submission.")
+  # print("Injection already in DB, no LM peak submission.")
   # }
-
+  message("Here4")
 
   #### MAKE ALL CHECK_LM_INFO COLUMNS INTO NUMBER ####
   # colnames(check_LM_info) = c("FilePath","lmIntOutliers","lmIntOutliers_p",
@@ -1005,7 +1065,17 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
   # check_LM_info[,c(22)] <- sapply(check_LM_info[,c(22)], as.double)#as.data.frame(as.double(check_LM_info[,c(22,24)]))
   check_LM_info[check_LM_info=="TRUE"] <- "*"
   check_LM_info[check_LM_info=="FALSE"] <- ""
+  message("Here5")
 
+  # submitLMQualityToDB(testInj=testInj, dbName=dbName, qualityTable=check_LM_info)
+  message("Here6")
 
-  submitLMQualityToDB(testInj=testInj, dbName=dbName, qualityTable=check_LM_info)
+  finalTime <- Sys.time() - timeOfInit
+  message(finalTime)
+  # sink(paste0("C:/241105QualiMonTest/",gsub(":", "-", strsplit(format(Sys.time()), " ")[[1]][2]), ".txt"))
+  # print(paste0("Time after xcms: ", timeAfterXCMS))
+  # print(paste0("Final time: ", finalTime))
+  # cat(paste0("Time after xcms: ", timeAfterXCMS))
+  # cat(paste0("Final time: ", finalTime))
+  # sink()
 }
