@@ -212,12 +212,12 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
   resultTryCatch <- tryCatch({
     invisible({
       raw_data <- readMSData(files = filePath, mode = "onDisk") # Read in file -> MS
-      sink("C:/241105QualiMonTest/filterRT.txt")
+      #sink("C:/241105QualiMonTest/filterRT.txt")
       raw_data <- xcms::filterRt(raw_data, rt=c(0.25*60,
                                                 max(raw_data@featureData@data$retentionTime)))
       print(raw_data)
       print(raw_data@featureData@data$retentionTime)
-      sink()
+      #sink()
       # stop()
 
       # if(length(unique(raw_data@featureData@data$msLevel))==1 && unique(raw_data@featureData@data$msLevel)==2 && batch){
@@ -235,11 +235,11 @@ checkLM <- function(filePath, dbName="NameOfDB.db", instrument="QTOF", projName=
       "No error"
     })
   }, error = function(err) {
-    sink("C:/241105QualiMonTest/indbtest.txt")
+    #sink("C:/241105QualiMonTest/indbtest.txt")
     message(paste0("Couldn't read sample: ", fileName))
     message("properly. Skipping it and continuing file monitoring.")
     print(paste("Error"))
-    sink()
+    #sink()
     return(NA)
   })
 
